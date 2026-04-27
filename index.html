@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Wizard 🌟</title>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#66a6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+:root {
+    --bg-gradient: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+    --button-bg: #ff6f61;
+    --button-hover: #ff3b2f;
+    --text-color: #333;
+    --heading-color: #fff;
+    --output-bg: rgba(255,255,255,0.85);
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --letter-spacing: normal;
+}
+
+body {
+    font-family: var(--font-family);
+    letter-spacing: var(--letter-spacing);
+    background: var(--bg-gradient);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 { margin:0; color: var(--heading-color); text-shadow:2px 2px #00000044; }
+
+.header { display:flex; align-items:center; margin-bottom:20px; }
+.header img { width:70px; height:70px; margin-right:15px; }
+
+select, input { font-size:1rem; padding:10px; margin:10px; border-radius:8px; border:none; outline:none; width:90%; max-width:250px; }
+button { padding:10px 20px; margin:10px; font-size:1rem; font-weight:bold; color:#fff; background-color:var(--button-bg); border:none; border-radius:10px; cursor:pointer; transition: all 0.3s ease; box-shadow:0 4px 6px rgba(0,0,0,0.2);}
+button:hover { background-color:var(--button-hover); transform:translateY(-2px); box-shadow:0 6px 10px rgba(0,0,0,0.3);}
+#output,#suggestions { margin-top:20px; padding:15px; width:90%; max-width:600px; background:var(--output-bg); border-radius:10px; min-height:100px; overflow-wrap:break-word; box-shadow:0 4px 10px rgba(0,0,0,0.2);}
+#suggestions { max-height:150px; overflow-y:auto; }
+.suggestion { padding:5px; cursor:pointer; }
+.suggestion:hover { background-color:#66a6ff44; border-radius:5px; }
+.easy{color:green;} .medium{color:orange;} .hard{color:red;}
+#copyBtn{background-color:#4CAF50;} #copyBtn:hover{background-color:#3e8e41;}
+#stats{margin-top:10px;font-weight:bold;color:#fff;text-shadow:1px 1px #00000088;}
+@media(max-width:600px){input,select,button{width:95%; font-size:1rem;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+<img src="logo.png" alt="Word Wizard Logo">
+<h1>Word Wizard 🪄</h1>
+</div>
+
+<label for="themeSelect" style="color:#fff;font-weight:bold;">Theme:</label>
+<select id="themeSelect" onchange="changeTheme()">
+    <option value="ocean">Ocean Breeze</option>
+    <option value="sunset">Sunset Glow</option>
+    <option value="neon">Neon Cyber</option>
+</select>
+
+<label for="accessibilitySelect" style="color:#fff;font-weight:bold;">Accessibility:</label>
+<select id="accessibilitySelect" onchange="changeAccessibility()">
+    <option value="normal">Normal</option>
+    <option value="highContrast">High Contrast</option>
+    <option value="dyslexic">Dyslexia-Friendly</option>
+</select>
+
+<select id="languageSelect" onchange="loadLanguage()">
+<option value="">Select Language</option>
+</select>
+
+<input type="text" id="wordInput" placeholder="Type letters to unscramble" oninput="showSuggestions()">
+<input type="text" id="startsWith" placeholder="Starts with (optional)">
+<div id="suggestions"></div>
+
+<button onclick="filterWords()">Find Words</button>
+<button id="copyBtn" onclick="copyResults()">Copy Results</button>
+
+<div id="stats">Stats will appear here...</div>
+<div id="output">Results will appear here...</div>
+
+<script>
+let words=[],currentLanguage="";
+
+async function detectLanguages(){
+const languageFiles=["en.json","es.json","fr.json","de.json","it.json","pt.json","nl.json","sv.json","ru.json","ja.json"];
+const languageSelect=document.getElementById('languageSelect');
+for(const file of languageFiles){try{const response=await fetch(file,{method:'HEAD'});if(response.ok){const langCode=file.split('.')[0];const displayName=langCode.toUpperCase();const option=document.createElement('option');option.value=langCode;option.text=displayName;languageSelect.add(option);}}catch(err){console.warn(`File ${file} not found.`);}}}
+
+async function loadLanguage(){const lang=document.getElementById('languageSelect').value;if(!lang)return;currentLanguage=lang;const response=await fetch(`${lang}.json`);words=await response.json();document.getElementById('output').textContent=`Loaded ${words.length} words for ${lang.toUpperCase()}`;document.getElementById('stats').textContent=`Language: ${currentLanguage.toUpperCase()} | Total words: ${words.length}`;}
+
+function showSuggestions(){const input=document.getElementById('wordInput').value.toLowerCase().trim();const suggestionsDiv=document.getElementById('suggestions');suggestionsDiv.innerHTML='';if(!input||!words.length)return;const sortedInput=input.split('').sort().join('');const filtered=words.filter(w=>w.word.split('').sort().join('').startsWith(sortedInput)).slice(0,20);filtered.forEach(w=>{const div=document.createElement('div');div.className=`suggestion ${w.difficulty}`;div.textContent=w.word;div.onclick=()=>{document.getElementById('wordInput').value=w.word;suggestionsDiv.innerHTML='';};suggestionsDiv.appendChild(div);});}
+
+function filterWords(){const input=document.getElementById('wordInput').value.toLowerCase().trim();const startsWith=document.getElementById('startsWith').value.toLowerCase().trim();if(!words.length)return;let filtered=words;if(input){const sortedInput=input.split('').sort().join('');filtered=filtered.filter(w=>w.word.split('').sort().join('')===sortedInput);}if(startsWith)filtered=filtered.filter(w=>w.word.startsWith(startsWith));const outputDiv=document.getElementById('output');const statsDiv=document.getElementById('stats');if(!filtered.length){outputDiv.textContent='No matches found';statsDiv.textContent=`Language: ${currentLanguage.toUpperCase()} | Total words: ${words.length} | Matches: 0`;return;}outputDiv.innerHTML=filtered.map(w=>`<span class="${w.difficulty}">${w.word}</span>`).join(', ');const matchCount=filtered.length;const avgLength=filtered.reduce((sum,w)=>sum+w.word.length,0)/matchCount;statsDiv.textContent=`Language: ${currentLanguage.toUpperCase()} | Total words: ${words.length} | Matches: ${matchCount} | Avg length: ${avgLength.toFixed(1)}`;}
+
+function copyResults(){const outputDiv=document.getElementById('output');const text=outputDiv.textContent;if(!text||text==='Results will appear here...'||text==='No matches found')return;navigator.clipboard.writeText(text).then(()=>alert("Copied to clipboard!")).catch(err=>alert("Failed to copy: "+err));}
+
+function changeTheme(){const theme=document.getElementById('themeSelect').value;const root=document.documentElement;switch(theme){case'ocean':root.style.setProperty('--bg-gradient','linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)');root.style.setProperty('--button-bg','#ff6f61');root.style.setProperty('--button-hover','#ff3b2f');root.style.setProperty('--text-color','#333');root.style.setProperty('--heading-color','#fff');root.style.setProperty('--output-bg','rgba(255, 255, 255, 0.85)');break;case'sunset':root.style.setProperty('--bg-gradient','linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)');root.style.setProperty('--button-bg','#ffcc00');root.style.setProperty('--button-hover','#ff9900');root.style.setProperty('--text-color','#222');root.style.setProperty('--heading-color','#fff');root.style.setProperty('--output-bg','rgba(255, 255, 255, 0.9)');break;case'neon':root.style.setProperty('--bg-gradient','linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)');root.style.setProperty('--button-bg','#39ff14');root.style.setProperty('--button-hover','#0fff00');root.style.setProperty('--text-color','#39ff14');root.style.setProperty('--heading-color','#0ff');root.style.setProperty('--output-bg','rgba(0,0,0,0.8)');break;}}
+
+function changeAccessibility(){const option=document.getElementById('accessibilitySelect').value;const root=document.documentElement;switch(option){case'normal':root.style.setProperty('--text-color','#333');root.style.setProperty('--heading-color','#fff');root.style.setProperty('--output-bg','rgba(255,255,255,0.85)');root.style.setProperty('--font-family','Segoe UI, Tahoma, Geneva, Verdana, sans-serif');root.style.setProperty('--letter-spacing','normal');break;case'highContrast':root.style.setProperty('--text-color','#000');root.style.setProperty('--heading-color','#ffff00');root.style.setProperty('--output-bg','rgba(255,255,0,0.9)');root.style.setProperty('--font-family','Segoe UI, Tahoma, Geneva, Verdana, sans-serif');root.style.setProperty('--letter-spacing','normal');break;case'dyslexic':root.style.setProperty('--text-color','#222');root.style.setProperty('--heading-color','#fff');root.style.setProperty('--output-bg','rgba(255,255,255,0.9)');root.style.setProperty('--font-family','OpenDyslexic, Arial, sans-serif');root.style.setProperty('--letter-spacing','0.05em');break;}}
+
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('service-worker.js').then(reg=>{console.log('Service Worker registered.',reg);});});}
+
+document.addEventListener('DOMContentLoaded',()=>{detectLanguages();changeTheme();});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+[
+  {"word":"example","difficulty":"medium"},
+  {"word":"apple","difficulty":"easy"},
+  {"word":"encyclopedia","difficulty":"hard"}
+]
